@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Лаба 1</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <table>
+    <tr>
+      <td class="header" colspan="2"> Филимонов Глеб Максимович Р3221 Вариант: 467861</td>
+    </tr>
+    <tr>
+      <td class="graph">
+        <svg height="480" width="480" xmlns="http://www.w3.org/2000/svg">
+
+                    <line stroke="gray" x1="40" x2="440" y1="240" y2="240"></line>
+                    <line stroke="gray" x1="240" x2="240" y1="40" y2="440"></line>
+                    <polygon fill="gray" points="437,233 437,247 447,240" stroke="black"></polygon>
+                    <polygon fill="gray" points="233,43 247,43 240,33" stroke="black"></polygon>
+
+                    <line stroke="gray" x1="107" x2="107" y1="235" y2="245"></line>
+                    <line stroke="gray" x1="173.2" x2="173.2" y1="235" y2="245"></line>
+                    <line stroke="gray" x1="306.5" x2="306.5" y1="235" y2="245"></line>
+                    <line stroke="gray" x1="373" x2="373" y1="235" y2="245"></line>
+
+                    <line stroke="gray" x1="235" x2="245" y1="107" y2="107"></line>
+                    <line stroke="gray" x1="235" x2="245" y1="173.2" y2="173.2"></line>
+                    <line stroke="gray" x1="235" x2="245" y1="306.5" y2="306.5"></line>
+                    <line stroke="gray" x1="235" x2="245" y1="373" y2="373"></line>
+
+                    <text x="450" y="235">X</text>
+                    <text x="375" y="233">R</text>
+                    <text x="309.4" y="233">R/2</text>
+                    <text x="176.2" y="233">-R/2</text>
+                    <text x="109.6" y="233">-R</text>
+                    
+                    <text x="240" y="30">Y</text>
+                    <text x="247" y="109.6">R</text>
+                    <text x="247" y="176.2">R/2</text>
+                    <text x="247" y="309.4">-R/2</text>
+                    <text x="247" y="375">-R</text>
+
+                    <rect x="107" y="240" width="133" height="133" fill="#0000FF" fill-opacity="0.2"
+                          stroke="#0000FF"></rect>
+
+                    <polygon fill="#0000FF" fill-opacity="0.2" points="240,240 240,173.2 173.2,240"
+                             stroke="#0000FF"></polygon>
+
+                    <path d="M 240 240 L 373 240 A 133 133 0 0 0 240 107 Z" fill-opacity="0.2" fill="#0000FF" stroke="#0000FF"></path>
+
+                    <circle cx="240" cy="240" id="target-dot" r="2"></circle>
+                </svg>
+      </td>
+      <td class="content">
+        <h4>Выберите Х</h4>
+        <p:spinner id="minMax" value="#{spinnerView.number3}" min="-5" max="100"/>
+        <h4>Выберите Y</h4>
+          <input type="number" id="y" name="y" placeholder="(-3..3)" />
+          <p id="y-error" style="color: red; display: none;">Введите число!</text>
+        <h4>Выберите R</h4>
+          <select name="r" id="r"> 
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+          </select>
+        <h4>Нажмите кнопку, чтобы проверить, попадает ли точка в область</h4>
+        <button id="getButton">Проверить</button>
+      </td>
+    </tr>
+    <tr>
+      <td class="footer" colspan="2">
+        <table id="resultsTable" border="1">
+        <tr>
+            <th><h2 class="headerOfTable">X</h2></th>
+            <th><h2 class="headerOfTable">Y</h2></th>
+            <th><h2 class="headerOfTable">R</h2></th>
+            <th><h2 class="headerOfTable">Ответ</h2></th>
+            <th><h2 class="headerOfTable">Время выполнения</h2></th>
+            <th><h2 class="headerOfTable">Время на сервере</h2></th>
+        </tr>
+        <div id="pagination"></div>
+    </table>
+      </td>
+    </tr>
+  </table>
+
+<script>
+  const x = document.getElementById('x');
+  const y = document.getElementById('y');
+  const r = document.getElementById('r');
+  const button = document.getElementById('getButton');
+  const table = document.getElementById("resultsTable");
+  const pagination = document.getElementById("pagination");
+  const svg = document.querySelector("svg");
+
+  let currentPage = 1;
+  const rowsPerPage = 10;
+
+  sendDataToServer = function(x, y, r) {
+    drawPoint(parseFloat(x.value), parseFloat(y.value), parseFloat(r.value));
+    const url = `/fcgi-bin/main?x=${encodeURIComponent(x.value)}&y=${encodeURIComponent(y.value)}&r=${encodeURIComponent(r.value)}`;
+    fetch(url)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Ошибка сервера");
+        }
+        return response.json();
+      })
+      .then(jsonData => {
+        const table = document.getElementById("resultsTable");
+        const newRow = table.insertRow(1);
+
+        const xCell = newRow.insertCell(0);
+        const yCell = newRow.insertCell(1);
+        const rCell = newRow.insertCell(2);
+        const resultCell = newRow.insertCell(3);
+        const executionTimeCell = newRow.insertCell(4);
+        const serverTimeCell = newRow.insertCell(5);
+
+        xCell.innerText = jsonData.x;
+        yCell.innerText = jsonData.y;
+        rCell.innerText = jsonData.r;
+        resultCell.innerText = jsonData.answer ? "Входит" : "Не входит";
+        executionTimeCell.innerText = jsonData.executionTime + " ns";
+        serverTimeCell.innerText = jsonData.serverTime;
+
+        displayTablePage(currentPage);
+      })
+      .catch(error => alert("Ошибка: " + error));
+  };
+
+  drawPoint = function(x, y, r) {
+    const svg = document.querySelector("svg");
+    const seg = 133;
+    const center = 240
+
+    const pointX = center + x * seg / r;
+    const pointY = center - y * seg / r;
+
+    const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    dot.setAttribute("cx", pointX);
+    dot.setAttribute("cy", pointY);
+    dot.setAttribute("r", 3);
+    dot.setAttribute("fill", "red");
+    console.log("Dot coordinates:", pointX, pointY)
+    svg.appendChild(dot);
+  };
+
+  svg.addEventListener("click", function(event) {
+    const rect = svg.getBoundingClientRect();
+    const x = (event.clientX - rect.left - 240) / 133 * r.value;
+    const y = (240 - (event.clientY - rect.top)) / 133 * r.value;
+    sendDataToServer({value: x.toFixed(10)}, {value: y.toFixed(10)}, r);
+    console.log("SVG click coordinates:", x, y);
+  });
+
+  function displayTablePage(page) {
+    const rows = table.rows;
+    const totalRows = rows.length - 1;
+    const totalPages = Math.ceil(totalRows / rowsPerPage);
+
+    if (page < 1) page = 1;
+    if (page > totalPages) page = totalPages;
+    currentPage = page;
+
+    for (let i = 1; i < rows.length; i++) {
+      rows[i].style.display = "none";
+    }
+    const start = (page - 1) * rowsPerPage + 1;
+    const end = start + rowsPerPage;
+    for (let i = start; i < end && i < rows.length; i++) {
+      rows[i].style.display = "";
+    }
+
+    pagination.innerHTML = "";
+    for (let i = 1; i <= totalPages; i++) {
+      const btn = document.createElement("button");
+      btn.innerText = i;
+      btn.disabled = (i === page);
+      btn.onclick = () => displayTablePage(i);
+      pagination.appendChild(btn);
+    }
+  }
+
+
+  y.addEventListener("input", () => {
+    let value = parseFloat(y.value);
+    if (value < -3) {
+      y.value = -3;
+    } else if (value > 3) {
+      y.value = 3;
+    }
+  });
+
+  button.onclick = function () {
+    let value = parseFloat(y.value);
+    if (isNaN(value)) {
+      document.getElementById("y-error").style.display = "inline";
+      return
+    } 
+    else {
+      document.getElementById("y-error").style.display = "none";
+    }
+    sendDataToServer(x, y, r);
+  }
+
+  displayTablePage(1);
+</script>
+</body>
+</html>
